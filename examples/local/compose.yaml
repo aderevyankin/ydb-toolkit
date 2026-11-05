@@ -1,0 +1,16 @@
+name: ydb-toolkit-local
+services:
+  ydb:
+    image: ydbplatform/local-ydb:26.1.1.22
+    platform: linux/amd64
+    hostname: localhost
+    ports:
+      - "127.0.0.1:2140:2140"
+      - "127.0.0.1:8769:8769"
+    environment:
+      GRPC_PORT: 2140
+      MON_PORT: 8769
+    volumes:
+      - ydb-data:/ydb_data
+volumes:
+  ydb-data:

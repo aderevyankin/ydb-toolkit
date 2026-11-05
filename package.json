@@ -1,0 +1,39 @@
+{
+  "name": "@aderevyankin/ydb-toolkit",
+  "version": "0.1.0",
+  "description": "YDB toolkit built on the official JavaScript SDK: query execution, migrations, TypeScript type generation, and diagnostics.",
+  "type": "module",
+  "license": "MIT",
+  "author": "aderevyankin",
+  "repository": {"type": "git", "url": "git+https://github.com/aderevyankin/ydb-toolkit.git"},
+  "homepage": "https://github.com/aderevyankin/ydb-toolkit#readme",
+  "bugs": {"url": "https://github.com/aderevyankin/ydb-toolkit/issues"},
+  "keywords": ["ydb", "yandex", "migrations", "typescript", "yql"],
+  "engines": {"node": ">=22"},
+  "files": ["dist", "docs", "examples", "README.en.md", "THIRD_PARTY_NOTICES.md"],
+  "exports": {
+    ".": {"types": "./dist/index.d.ts", "import": "./dist/index.js"},
+    "./migrations": {"types": "./dist/migrations.d.ts", "import": "./dist/migrations.js"},
+    "./schema": {"types": "./dist/schema.d.ts", "import": "./dist/schema.js"}
+  },
+  "bin": {"ydb-toolkit": "dist/cli.js"},
+  "scripts": {
+    "build": "tsc",
+    "type-check": "tsc --noEmit",
+    "test": "npm run build && node --test tests/unit.test.mjs",
+    "test:local": "npm run build && node --test tests/local.test.mjs",
+    "test:pack": "npm run build && node scripts/test-pack.mjs",
+    "db:up": "docker compose -f examples/local/compose.yaml up -d --wait",
+    "db:stop": "docker compose -f examples/local/compose.yaml stop",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "2.12.0",
+    "@ydbjs/api": "6.0.7",
+    "@ydbjs/auth": "6.3.1",
+    "@ydbjs/core": "6.3.1",
+    "@ydbjs/query": "6.3.0",
+    "@ydbjs/value": "6.0.8"
+  },
+  "devDependencies": {"@types/node": "^22.0.0", "esbuild": "^0.25.8", "typescript": "^5.8.3"}
+}

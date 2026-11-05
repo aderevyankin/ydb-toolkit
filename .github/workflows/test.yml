@@ -1,0 +1,22 @@
+name: Tests
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  node:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run type-check
+      - run: npm test
+      - run: npm run db:up
+      - run: npm run test:local
+      - run: npm run test:pack
+      - run: docker compose -f examples/local/compose.yaml logs --tail 100
+        if: failure()
