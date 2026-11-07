@@ -2,11 +2,8 @@
 
 [Русский](README.md) · **English**
 
-YDB toolkit built on the official JavaScript SDK: query execution, migrations,
-TypeScript type generation, and diagnostics.
-
-An addition to [`@ydbjs`](https://github.com/ydb-platform/ydb-js-sdk), not a replacement
-SDK, ORM, or cross-database abstraction. An independent project, not an official YDB/Yandex product.
+Query timeouts and cancellation, file-based migrations, and TypeScript types from your YDB schema.
+For Node.js 22+, built on the official [`@ydbjs`](https://github.com/ydb-platform/ydb-js-sdk).
 
 ## Contents
 
@@ -22,8 +19,10 @@ to application models. Query names never determine whether retries are safe.
 
 ## Installation
 
+npm package: [`@andmider/ydb-toolkit`](https://www.npmjs.com/package/@andmider/ydb-toolkit).
+
 ```sh
-npm install @andmider/ydb-toolkit
+npm install @andmider/ydb-toolkit@0.1.0
 ```
 
 To build a local tarball:
@@ -93,6 +92,7 @@ generation, and checks that a CJS-bundled Cloud Function handler can be loaded.
 
 ## Limitations
 
+- Not an ORM or a cross-database abstraction. An independent project, not an official YDB/Yandex product.
 - Hedging adds a read and may increase RU usage. It does not fix every server stall.
 - `mode: 'read'` is a caller guarantee: never use it for queries with side effects.
 - Migrations require a single process; DDL is not atomic. No migration lock or checksum enforcement.

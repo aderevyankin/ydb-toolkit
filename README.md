@@ -2,11 +2,8 @@
 
 **Русский** · [English](README.en.md)
 
-Инструменты для работы с YDB поверх официального JavaScript SDK: выполнение запросов,
-миграции, генерация TypeScript-типов и диагностика.
-
-Пакет дополняет [`@ydbjs`](https://github.com/ydb-platform/ydb-js-sdk), а не заменяет SDK.
-Это не ORM и не общий слой для разных СУБД. Независимый проект, не официальный продукт YDB/Yandex.
+Запросы с таймаутами и отменой, миграции из файлов и TypeScript-типы из схемы YDB.
+Для Node.js 22+, поверх официального [`@ydbjs`](https://github.com/ydb-platform/ydb-js-sdk).
 
 ## Что входит
 
@@ -22,8 +19,10 @@ Int64/Uint64 остаются `bigint`, nullable — `T | null`. Пакет не
 
 ## Установка
 
+Пакет в npm: [`@andmider/ydb-toolkit`](https://www.npmjs.com/package/@andmider/ydb-toolkit).
+
 ```sh
-npm install @andmider/ydb-toolkit
+npm install @andmider/ydb-toolkit@0.1.0
 ```
 
 Для локальной сборки tarball:
@@ -95,6 +94,7 @@ npm run db:stop
 
 ## Ограничения
 
+- Это не ORM и не общий слой для разных СУБД. Независимый проект, не официальный продукт YDB/Yandex.
 - Hedge запускает дополнительное чтение и может увеличить RU. Это не лечение всех зависаний сервера.
 - `mode: 'read'` — обязательство вызывающего кода: передавать туда запрос с побочными эффектами нельзя.
 - Миграции запускаются одним процессом; DDL не атомарен, автоматической блокировки/checksum нет.
