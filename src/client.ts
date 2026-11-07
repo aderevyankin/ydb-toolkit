@@ -49,7 +49,6 @@ export class YdbClient {
   private readonly context = new AsyncLocalStorage<NodeInfo>();
   private readonly channel = tracingChannel("tracing:ydb:query.execute");
   private readonly lifetime = new AbortController();
-  private readonly labels = new Map<string, string>();
   private closing: Promise<void> | null = null;
   private readonly onStart = (message: unknown): void => {
     const holder = this.context.getStore();
@@ -81,11 +80,6 @@ export class YdbClient {
     this.lifetime.signal.throwIfAborted();
     options.signal?.throwIfAborted();
     const label = options.label ?? "<raw>";
-    if (options.label) {
-      if (this.labels.has(label) && this.labels.get(label) !== yql) {
-        this.log("error", "QUERY_KEY_TEXT_MISMATCH", {label});
-      } else {this.labels.set(label, yql);}
-    }
     if (options.mode !== "read" && options.hedge) {throw new Error("Hedging is only allowed for explicit reads");}
     const timeout = positiveMs(options.timeoutMs ?? (options.mode === "read" ? 9000 : 8000));
     if (options.mode !== "read" || options.hedge === false) {
@@ -125,10 +119,19 @@ export class YdbClient {
     const path = keyPath(this.driver.database, {table, key: row, columns: []});
     const signal = this.signal(AbortSignal.timeout(positiveMs(options.timeoutMs ?? 8000)), options.signal);
     signal.throwIfAborted();
-    const res = await this.table.bulkUpsert({table: path, rows: typed(new List(new Struct(row)))}, {signal});
-    const status = res.operation?.status ?? StatusIds_StatusCode.STATUS_CODE_UNSPECIFIED;
-    if (status !== StatusIds_StatusCode.SUCCESS) {
-      throw new Error(`BulkUpsert ${StatusIds_StatusCode[status]}: ${(res.operation?.issues ?? []).map(i => i.message).join("; ")}`);
+    const started = Date.now();
+    try {
+      const res = await this.table.bulkUpsert({table: path, rows: typed(new List(new Struct(row)))}, {signal});
+      const status = res.operation?.status ?? StatusIds_StatusCode.STATUS_CODE_UNSPECIFIED;
+      if (status !== StatusIds_StatusCode.SUCCESS) {
+        throw new Error(`BulkUpsert ${StatusIds_StatusCode[status]}: ${(res.operation?.issues ?? []).map(i => i.message).join("; ")}`);
+      }
+    } catch (error: unknown) {
+      if (signal.aborted) {
+        this.log("warn", "DB_QUERY_TIMEOUT", {label: options.label ?? table, kind: "bulkUpsert", role: "single",
+          nodeId: null, elapsedMs: Date.now() - started});
+      }
+      throw error;
     }
   }
 

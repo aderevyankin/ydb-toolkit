@@ -11,7 +11,8 @@ const db = await YdbClient.connect({
 });
 ```
 
-Pass `grpc://host:port/database` or `grpcs://host:port/database` explicitly. The library
+The official SDK parses `connectionString`: both `grpc(s)://host:port/database` and
+`grpc(s)://host:port/?database=/database` are supported. The library
 does not select application environments, `yc` profiles, or secrets. `driverOptions`
 are forwarded to the official Driver: custom credentials providers, TLS, discovery.
 Defaults: discovery disabled, ready timeout 10 seconds. See [history](history.en.md)
@@ -60,8 +61,7 @@ The toolkit does not claim static result typing for arbitrary SQL.
 
 Bind parameters separately; never interpolate user values into YQL. Manual `DECLARE`
 statements are unnecessary: Query SDK adds them from parameter types. `label` is a
-diagnostic label, not a prepared query cache key. Reusing it with different query text
-logs `QUERY_KEY_TEXT_MISMATCH` without blocking execution.
+diagnostic label. The package keeps no registry of labels and query texts.
 
 `mode: 'read'` enables SDK idempotent retries and hedging. It is the caller's guarantee
 that the query has no side effects; the toolkit does not parse SQL to prove safety.
@@ -74,10 +74,12 @@ Explicit reads hedge by default: after 1 second a SQL copy is launched with a
 `/* hedge */` prefix. Disable with `hedge: false` or configure `hedge: {delayMs: 1000}`.
 The delay must be positive and shorter than `timeoutMs`; the hedge receives the remaining budget.
 
-The first successful result wins and cancels the loser. Primary failure before hedge
+The first successful result wins and invokes cancellation of the loser. Primary failure before hedge
 launch propagates immediately. After launch the other attempt can still succeed;
 if both fail, the primary error is returned. A derived-key mismatch must not hide the
 original failure. Two reads do not share a snapshot transaction.
+The exported `raceWithHedge` expects a synchronous `cancel()` function;
+an exception from that function does not hide the winner's successful result.
 
 ## Parameters and types
 
@@ -89,6 +91,7 @@ Both `ydb.required` and `ydb.optional` provide `utf8`, `int32`, `int64`, `uint32
 - JSON helpers accept JS values; `TypedValues.json/jsonDocument` accept JSON text.
 - timestamp accepts a Date.
 - `TypedValues.list(Types.struct({...}), rows)` builds List/Struct parameters.
+- Unknown List/Struct values are checked before sending; the string `"false"` is not accepted as Bool.
 - Empty lists, including nested ones, are rejected because the SDK infers their type from the first item.
 - `Types.optional`, `Types.list`, `Types.struct` build composite types.
 - `isPreconditionFailed(error)` tests the SDK status code, not an error message.
@@ -181,6 +184,8 @@ Interface names are derived from table names without heuristic singularization; 
 are errors. Field names are quoted. Int64/Uint64 map to bigint; Optional to `T | null`,
 not an optional property; JSON to unknown; known dates to Date. Lists, structs and tuples
 are handled recursively; unhandled types map to unknown. JSON schema belongs to the application.
+Built-in types use `globalThis` qualification and arrays use `T[]`, so generated
+interfaces named Date, Uint8Array or Array do not shadow field types.
 The optional registry exports `TableColumns` and `ExistingTables` to the consumer path.
 Use `.mjs` unless the consumer already treats `.js` as ESM.
 
@@ -194,7 +199,6 @@ Keep personal data out of labels. Logger exceptions do not alter query outcomes.
 | `DB_QUERY_TIMEOUT` | attempt timeout/abort; label, duration, available nodeId |
 | `DB_QUERY_HEDGE` | winner, hedge kind, node IDs and trailer RU when available |
 | `DB_QUERY_STATS` | compile cache miss or SQL ≥ 1 second; compileMs/totalMs |
-| `QUERY_KEY_TEXT_MISMATCH` | one label used for different texts |
 
 SQL nodeId comes from `tracing:ydb:query.execute` via AsyncLocalStorage; Table API nodeId
 is not inferred. This relies on the pinned SDK's diagnostics API. For deeper inspection

@@ -17,7 +17,8 @@ export function raceWithHedge<T>(launch: (isHedge: boolean) => HedgeAttempt<T>, 
         if (settled) {return;}
         settled = true;
         clearTimeout(timer);
-        (isHedge ? primary : hedge)?.cancel();
+        try {(isHedge ? primary : hedge)?.cancel();}
+        catch { /* Cancellation must not replace a successful read. */ }
         resolve({value, winner: isHedge ? "hedge" : "primary", hedged: hedge !== null});
       }, (error: unknown) => {
         if (settled) {return;}

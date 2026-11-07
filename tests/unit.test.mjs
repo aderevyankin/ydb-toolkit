@@ -4,10 +4,11 @@ import {mkdtemp, readFile, readdir, writeFile} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {setTimeout as sleep} from 'node:timers/promises';
+import {execFileSync} from 'node:child_process';
 import {create} from '@bufbuild/protobuf';
 import {toJs} from '@ydbjs/value';
 import {TypeSchema, Type_PrimitiveTypeId as P} from '@ydbjs/api/value';
-import {raceWithHedge, TypedValues, Types, ydb} from '../dist/index.js';
+import {raceWithHedge, TypedValues, Types, ydb, YdbClient} from '../dist/index.js';
 import {createMigration, identifier, validateTableSchema, runMigrations, rollbackMigration, dropNotNull} from '../dist/migrations.js';
 import {typescriptType, generateTypes} from '../dist/schema.js';
 
@@ -56,6 +57,23 @@ test('hedge skips fast primary', async () => {
   assert.equal(result.value, 1); assert.equal(result.hedged, false); assert.equal(launches, 1);
 });
 
+test('unknown List/Struct inputs are validated without scalar coercion', () => {
+  const invalid = [
+    [Types.BOOL, 'false'], [Types.UTF8, 42], [Types.DOUBLE, '1.5'],
+    [Types.INT32, '1'], [Types.INT32, 1.5], [Types.INT32, 2147483648],
+    [Types.UINT32, -1], [Types.UINT32, 4294967296],
+    [Types.TIMESTAMP, '2026-01-01'], [Types.TIMESTAMP, new Date('invalid')],
+    [Types.JSON, {ok: true}], [Types.JSON, '{invalid}'], [Types.JSON_DOCUMENT, 'invalid'],
+    [Types.optional(Types.BOOL), 'false'],
+  ];
+  for (const [type, value] of invalid) {assert.throws(() => TypedValues.list(type, [value]));}
+  assert.throws(() => TypedValues.list(Types.struct({enabled: Types.BOOL}), [{enabled: 'false'}]), /boolean/);
+  assert.deepEqual(toJs(TypedValues.list(Types.BOOL, [false, true])), [false, true]);
+  assert.deepEqual(toJs(TypedValues.list(Types.INT32, [-2147483648, 2147483647])), [-2147483648, 2147483647]);
+  assert.deepEqual(toJs(TypedValues.list(Types.UINT32, [0, 4294967295])), [0, 4294967295]);
+  assert.deepEqual(toJs(TypedValues.list(Types.JSON, ['{"ok":true}'])), [{ok: true}]);
+});
+
 test('hedge winner cancels primary and primary winner cancels hedge', async () => {
   for (const hedgeWins of [true, false]) {
     const cancelled = [];
@@ -73,6 +91,17 @@ test('primary failure before hedge does not launch duplicate', async () => {
   const failure = new Error('primary');
   await assert.rejects(raceWithHedge(() => {launches++; return {promise: Promise.reject(failure), cancel() {}};}, 20), error => error === failure);
   await sleep(30); assert.equal(launches, 1);
+});
+
+test('throwing loser cancellation does not hide success or cause an unhandled rejection', {timeout: 1000}, async () => {
+  for (const hedgeWins of [true, false]) {
+    const result = await raceWithHedge(isHedge => ({
+      promise: sleep(isHedge === hedgeWins ? 15 : 40).then(() => isHedge),
+      cancel() {throw new Error('cancel-failed');},
+    }), 2);
+    assert.equal(result.value, hedgeWins);
+    assert.equal(result.winner, hedgeWins ? 'hedge' : 'primary');
+  }
 });
 
 test('both failures preserve primary error regardless of order', async () => {
@@ -106,7 +135,7 @@ test('schema types follow SDK bigint/null and use unknown for unhandled types', 
   assert.equal(typescriptType(primitive(P.INT64)), 'bigint');
   assert.equal(typescriptType(primitive(P.UINT64)), 'bigint');
   assert.equal(typescriptType(primitive(P.JSON_DOCUMENT)), 'unknown');
-  assert.equal(typescriptType(primitive(P.TIMESTAMP)), 'Date');
+  assert.equal(typescriptType(primitive(P.TIMESTAMP)), 'globalThis.Date');
   assert.equal(typescriptType(create(TypeSchema, {type: {case: 'optionalType', value: {item: primitive(P.UTF8)}}})), '(string) | null');
   assert.equal(typescriptType(create(TypeSchema)), 'unknown');
 });
@@ -182,4 +211,39 @@ test('generator writes consumer paths, quoted fields and explicit nullable types
   assert.match(await readFile(path.join(dir, 'types.ts'), 'utf8'), /"item-id": bigint/);
   assert.match(await readFile(path.join(dir, 'tables.mjs'), 'utf8'), /ExistingTables/);
   await assert.rejects(generateTypes(db, {out: 'same', registry: 'same'}));
+});
+
+test('table interfaces cannot shadow built-in date, binary and array types', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'ydb-toolkit-types-'));
+  const primitive = value => create(TypeSchema, {type: {case: 'typeId', value}});
+  const tags = create(TypeSchema, {type: {case: 'listType', value: {item:
+    create(TypeSchema, {type: {case: 'optionalType', value: {item: primitive(P.UTF8)}}}),
+  }}});
+  await generateTypes({listTables: async () => ['array', 'date', 'uint8_array'], describeTable: async () => ({columns: [
+    {name: 'at', type: primitive(P.TIMESTAMP)}, {name: 'binary', type: primitive(P.STRING)}, {name: 'tags', type: tags},
+  ]})}, {out: path.join(dir, 'types.ts')});
+  await writeFile(path.join(dir, 'consumer.ts'), `import type {Array as ArrayRow, Date as DateRow, Uint8Array as BytesRow} from './types.js';\nconst value = {at: new Date(), binary: new Uint8Array([1]), tags: ['x', null]};\nconst rows: [ArrayRow, DateRow, BytesRow] = [value, value, value];\nvoid rows;\n`);
+  execFileSync(process.execPath, [path.resolve('node_modules/typescript/bin/tsc'), '--noEmit', '--strict', '--skipLibCheck',
+    '--target', 'es2023', path.join(dir, 'consumer.ts')], {encoding: 'utf8'});
+});
+
+test('BulkUpsert timeout preserves the failure and reports the supplied label', async () => {
+  const events = [];
+  const client = Object.create(YdbClient.prototype);
+  client.lifetime = new AbortController();
+  client.driver = {database: '/local'};
+  client.options = {logger: (level, event, details) => events.push({level, event, details})};
+  let failure = null;
+  client.table = {bulkUpsert: async (_request, {signal}) => await new Promise((_resolve, reject) => {
+    signal.addEventListener('abort', () => {failure = signal.reason; reject(failure);}, {once: true});
+  })};
+  await Promise.all([
+    assert.rejects(client.bulkUpsert('items', {id: ydb.required.utf8('x')}, {timeoutMs: 5, label: 'items.write'}), error => error === failure),
+    sleep(20),
+  ]);
+  assert.equal(events.length, 1);
+  assert.equal(events[0].event, 'DB_QUERY_TIMEOUT');
+  assert.equal(events[0].details.label, 'items.write');
+  assert.equal(events[0].details.kind, 'bulkUpsert');
+  assert.equal(events[0].details.role, 'single');
 });

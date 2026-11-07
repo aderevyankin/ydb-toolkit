@@ -94,7 +94,7 @@ generation, and checks that a CJS-bundled Cloud Function handler can be loaded.
 - Migrations require a single process; DDL is not atomic. No migration lock or checksum enforcement.
 - `dropNotNull` needs paused writes and a backup; it is not an online migration.
 - Table API restrictions depend on the server version; tests target local-ydb `26.1.1.22`.
-- JSON and unhandled schema types generate `unknown`, not an invented precise interface.
+- JSON and unhandled schema types generate `unknown`.
 
 ## Development
 

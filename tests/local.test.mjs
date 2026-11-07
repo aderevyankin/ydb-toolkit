@@ -18,6 +18,30 @@ test('standalone local YDB integration', {timeout: 120000}, async t => {
   const db = await connect(options);
   const client = await YdbClient.connect(options);
   try {
+    await t.test('SDK query-parameter connection URLs work for runtime and tooling', async () => {
+      const queryOptions = {...options, connectionString: 'grpc://localhost:2140/?database=/local'};
+      const other = await YdbClient.connect(queryOptions);
+      try {assert.equal((await other.execute('SELECT 1 AS ok')).resultSets[0][0].ok, 1);}
+      finally {await other.close();}
+      const tools = await connect(queryOptions);
+      try {assert.equal((await tools.sql('SELECT 1 AS ok'))[0][0].ok, 1);}
+      finally {await tools.close();}
+    });
+
+    await t.test('diagnostic labels do not retain a query-text registry', async () => {
+      const events = [];
+      const other = await YdbClient.connect({...options, logger: (_level, event) => events.push(event)});
+      try {
+        for (let i = 0; i < 1000; i++) {
+          await assert.rejects(other.execute('SELECT 1', {}, {label: `request-${i}`, timeoutMs: 0}));
+        }
+        await other.execute('SELECT 1', {}, {label: 'same'});
+        await other.execute('SELECT 2', {}, {label: 'same'});
+        assert.equal(Object.hasOwn(other, 'labels'), false);
+        assert.equal(events.includes('QUERY_KEY_TEXT_MISMATCH'), false);
+      } finally {await other.close();}
+    });
+
     for (const table of ['toolkit_rows', 'toolkit_indexed', 'toolkit_nullable', 'items', 'schema_migrations']) {
       if ((await db.listTables()).includes(table)) {await db.sql(`DROP TABLE \`${table}\``);}
     }

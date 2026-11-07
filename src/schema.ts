@@ -4,8 +4,8 @@ import {Type_PrimitiveTypeId as P, type Type} from "@ydbjs/api/value";
 import type {MigrationDb, TableRegistry} from "./migrations.js";
 
 const primitiveTypes: Partial<Record<P, string>> = {
-  [P.UTF8]: "string", [P.STRING]: "Uint8Array", [P.JSON]: "unknown", [P.JSON_DOCUMENT]: "unknown",
-  [P.TIMESTAMP]: "Date", [P.DATE]: "Date", [P.DATETIME]: "Date", [P.BOOL]: "boolean",
+  [P.UTF8]: "string", [P.STRING]: "globalThis.Uint8Array", [P.JSON]: "unknown", [P.JSON_DOCUMENT]: "unknown",
+  [P.TIMESTAMP]: "globalThis.Date", [P.DATE]: "globalThis.Date", [P.DATETIME]: "globalThis.Date", [P.BOOL]: "boolean",
   [P.INT8]: "number", [P.INT16]: "number", [P.INT32]: "number", [P.INT64]: "bigint",
   [P.UINT8]: "number", [P.UINT16]: "number", [P.UINT32]: "number", [P.UINT64]: "bigint",
   [P.FLOAT]: "number", [P.DOUBLE]: "number",
@@ -16,7 +16,7 @@ export function typescriptType(type?: Type): string {
   if (!value) {return "unknown";}
   if (value.case === "typeId") {return primitiveTypes[value.value] ?? "unknown";}
   if (value.case === "optionalType") {return `(${typescriptType(value.value.item)}) | null`;}
-  if (value.case === "listType") {return `Array<${typescriptType(value.value.item)}>`;}
+  if (value.case === "listType") {return `(${typescriptType(value.value.item)})[]`;}
   if (value.case === "structType") {
     return `{ ${value.value.members.map(member => `${JSON.stringify(member.name)}: ${typescriptType(member.type)}`).join("; ")} }`;
   }

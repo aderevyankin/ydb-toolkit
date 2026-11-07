@@ -12,7 +12,7 @@ The old v5 integration used prepareQuery, query_id, custom session-error classif
 and Promise timeouts. A timeout without RPC cancellation could leave an operation
 running and cause SessionBusy on reuse. Query Service v6 sends parameterized text without
 a separate prepare RPC. The SDK provides cancellation/deadlines and idempotent retry,
-so the old retry/prepared services are intentionally not part of the current runtime.
+so the old retry/prepared services are not part of the current runtime.
 
 ## Compile cache and hedging
 
@@ -68,7 +68,7 @@ from source git blob `25d8a1e79fd5070c038f9135697b6a42a3fd0dcc`.
 
 The actual diff removes the SDK's ESM tree and changes CJS certs.json. Its old explanatory
 text also mentioned package exports changes, but **this patch has no such diff**.
-A later legacy boilerplate variant differs; the original archive is not silently rewritten.
+A later legacy boilerplate variant contains a different patch.
 
 The patch addressed v5 packaging/bundling, not prepare/session failures. A later source
 experiment did not confirm that the patch was needed for final esbuild bundle size.

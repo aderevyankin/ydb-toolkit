@@ -8,10 +8,6 @@ export interface ConnectionOptions {
 }
 
 export async function openDriver(options: ConnectionOptions): Promise<Driver> {
-  const url = new URL(options.connectionString);
-  if (!["grpc:", "grpcs:"].includes(url.protocol) || !url.hostname || url.pathname.length < 2) {
-    throw new Error("Expected grpc(s)://host:port/database connection string");
-  }
   const supplied = options.driverOptions ?? {};
   const credentialsProvider = supplied.credentialsProvider ?? new EnvironCredentialsProvider(options.connectionString);
   const secureOptions = supplied.secureOptions

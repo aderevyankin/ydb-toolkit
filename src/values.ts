@@ -24,14 +24,32 @@ function nativeToValue(type: Type, value: unknown): Value {
   if (!(type instanceof OptionalType) && (value ?? null) === null) {throw new Error("Required List/Struct value is missing");}
   if (type instanceof Int64Type) {return new Int64(integer64(value as bigint | number));}
   if (type instanceof Uint64Type) {return new Uint64(integer64(value as bigint | number, true));}
-  if (type instanceof Int32Type) {return new Int32(value as number);}
-  if (type instanceof Uint32Type) {return new Uint32(value as number);}
-  if (type instanceof DoubleType) {return new Double(value as number);}
-  if (type instanceof BoolType) {return new Bool(value as boolean);}
-  if (type instanceof Utf8Type) {return new Utf8(value as string);}
-  if (type instanceof TimestampType) {return new Timestamp(value as Date);}
-  if (type instanceof JsonType) {return new Json(value as string);}
-  if (type instanceof JsonDocumentType) {return new JsonDocument(value as string);}
+  if (type instanceof Int32Type || type instanceof Uint32Type) {
+    const unsigned = type instanceof Uint32Type;
+    if (typeof value !== "number" || !Number.isInteger(value)
+      || value < (unsigned ? 0 : -2147483648) || value > (unsigned ? 4294967295 : 2147483647)) {
+      throw new TypeError("Expected an in-range Int32/Uint32 integer");
+    }
+    return unsigned ? new Uint32(value) : new Int32(value);
+  }
+  if (type instanceof DoubleType) {
+    if (typeof value !== "number") {throw new TypeError("Expected Double number");}
+    return new Double(value);
+  }
+  if (type instanceof BoolType) {
+    if (typeof value !== "boolean") {throw new TypeError("Expected Bool boolean");}
+    return new Bool(value);
+  }
+  if (type instanceof Utf8Type || type instanceof JsonType || type instanceof JsonDocumentType) {
+    if (typeof value !== "string") {throw new TypeError("Expected Utf8/JSON string");}
+    if (type instanceof Utf8Type) {return new Utf8(value);}
+    JSON.parse(value);
+    return type instanceof JsonType ? new Json(value) : new JsonDocument(value);
+  }
+  if (type instanceof TimestampType) {
+    if (!(value instanceof Date) || !Number.isFinite(value.getTime())) {throw new TypeError("Expected a valid Date");}
+    return new Timestamp(value);
+  }
   if (type instanceof OptionalType) {
     return (value ?? null) === null ? new Optional(null, type.itemType) : new Optional(nativeToValue(type.itemType, value));
   }

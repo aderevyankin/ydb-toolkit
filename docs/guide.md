@@ -11,7 +11,8 @@ const db = await YdbClient.connect({
 });
 ```
 
-`connectionString` — `grpc://host:port/database` или `grpcs://host:port/database`.
+`connectionString` разбирает официальный SDK: поддерживаются путь
+`grpc(s)://host:port/database` и параметр `grpc(s)://host:port/?database=/database`.
 Передаётся явно: библиотека не выбирает стенд, профиль `yc` или секреты приложения.
 `driverOptions` передаются официальному `Driver`: можно задать собственный credentials
 provider, TLS и discovery. По умолчанию discovery отключён, ready timeout — 10 секунд.
@@ -60,8 +61,7 @@ const result = await db.execute('SELECT * FROM items WHERE id = $id', {
 
 Параметры передаются отдельно; не интерполируйте пользовательские значения в текст YQL.
 `DECLARE` вручную не нужен: его добавляет Query SDK по типу параметра.
-`label` — диагностическая метка. Повторное использование метки с другим текстом даёт
-`QUERY_KEY_TEXT_MISMATCH`, но не блокирует запрос и не создаёт prepared cache.
+`label` — диагностическая метка. Пакет не хранит реестр меток и текстов запросов.
 
 `mode: 'read'` разрешает SDK idempotent retry и hedge. Ответственность за отсутствие
 побочных эффектов лежит на вызывающем коде; пакет не разбирает SQL для доказательства безопасности.
@@ -74,10 +74,12 @@ const result = await db.execute('SELECT * FROM items WHERE id = $id', {
 `/* hedge */`. Отключение — `hedge: false`; настройка — `hedge: {delayMs: 1000}`.
 Задержка должна быть положительной и меньше `timeoutMs`; у копии остаётся остаток бюджета.
 
-Побеждает первый успешный результат, проигравшая попытка отменяется. Если основная
+Побеждает первый успешный результат, после чего вызывается отмена проигравшей попытки. Если основная
 упала до запуска копии — ошибка сразу наружу. После запуска копии ждём её результат;
 если упали обе — возвращаем ошибку основной. Промах резервного ключа не подменяет исходную ошибку.
 Два чтения не являются одной snapshot-транзакцией.
+В экспортированном `raceWithHedge` функция `cancel()` синхронная;
+её исключение не скрывает успешный результат победителя.
 
 ## Параметры и типы
 
@@ -89,6 +91,7 @@ const result = await db.execute('SELECT * FROM items WHERE id = $id', {
 - JSON-хелперы принимают JS-значение, `TypedValues.json/jsonDocument` — JSON-строку.
 - timestamp принимает `Date`.
 - `TypedValues.list(Types.struct({...}), rows)` создаёт List/Struct-параметр.
+- Неизвестные значения List/Struct проверяются до отправки; строка `"false"` не принимается как Bool.
 - Пустой List отклоняется, в том числе вложенный: SDK выводит тип из первого элемента.
 - `Types.optional`, `Types.list`, `Types.struct` создают составные типы.
 - `isPreconditionFailed(error)` проверяет код `PRECONDITION_FAILED`, не текст сообщения.
@@ -182,6 +185,8 @@ try {
 Читаются таблицы корня базы, включая `schema_migrations`; вложенные директории не обходятся.
 Имена интерфейсов образуются из имени таблицы без эвристической сингуляризации.
 Коллизия имён — ошибка. Имена полей заключены в кавычки.
+Встроенные типы квалифицируются через `globalThis`, массивы используют `T[]`,
+поэтому интерфейсы `Date`, `Uint8Array` и `Array` не подменяют типы полей.
 Int64/Uint64 → bigint; Optional → `T | null`, поле не опциональное;
 JSON → unknown; известные даты → Date; списки/структуры/кортежи разбираются рекурсивно;
 необработанные типы → unknown. Уточнение JSON-схемы остаётся приложению.
@@ -198,7 +203,6 @@ Logger необязателен; пакет не печатает SQL, пара�
 | `DB_QUERY_TIMEOUT` | timeout/abort попытки; label, время, доступный nodeId |
 | `DB_QUERY_HEDGE` | победитель, тип копии, ноды и RU из trailers, если доступны |
 | `DB_QUERY_STATS` | промах compile cache или SQL ≥ 1 с; compileMs/totalMs |
-| `QUERY_KEY_TEXT_MISMATCH` | одна метка использована с разными текстами |
 
 nodeId SQL берётся из `tracing:ydb:query.execute` через AsyncLocalStorage;
 у Table API nodeId не вычисляется. Это привязка к diagnostics API закреплённого SDK.
