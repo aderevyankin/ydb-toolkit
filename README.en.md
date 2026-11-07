@@ -22,7 +22,7 @@ to application models. Query names never determine whether retries are safe.
 npm package: [`@andmider/ydb-toolkit`](https://www.npmjs.com/package/@andmider/ydb-toolkit).
 
 ```sh
-npm install @andmider/ydb-toolkit@0.1.0
+npm install @andmider/ydb-toolkit@0.1.1
 ```
 
 To build a local tarball:
@@ -37,7 +37,7 @@ npm pack
 In your application:
 
 ```sh
-npm install /path/to/andmider-ydb-toolkit-0.1.0.tgz
+npm install /path/to/andmider-ydb-toolkit-0.1.1.tgz
 ```
 
 Builds and the primary test suite use Node.js 22+. See the [compatibility matrix](docs/guide.en.md#compatibility)

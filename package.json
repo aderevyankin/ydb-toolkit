@@ -1,7 +1,7 @@
 {
   "name": "@andmider/ydb-toolkit",
-  "version": "0.1.0",
-  "description": "YDB toolkit built on the official JavaScript SDK: query execution, migrations, TypeScript type generation, and diagnostics.",
+  "version": "0.1.1",
+  "description": "Query timeouts, file-based migrations and TypeScript types for YDB.",
   "type": "module",
   "license": "MIT",
   "author": "aderevyankin",

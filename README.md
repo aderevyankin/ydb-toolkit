@@ -22,7 +22,7 @@ Int64/Uint64 остаются `bigint`, nullable — `T | null`. Пакет не
 Пакет в npm: [`@andmider/ydb-toolkit`](https://www.npmjs.com/package/@andmider/ydb-toolkit).
 
 ```sh
-npm install @andmider/ydb-toolkit@0.1.0
+npm install @andmider/ydb-toolkit@0.1.1
 ```
 
 Для локальной сборки tarball:
@@ -37,7 +37,7 @@ npm pack
 В потребляющем проекте:
 
 ```sh
-npm install /path/to/andmider-ydb-toolkit-0.1.0.tgz
+npm install /path/to/andmider-ydb-toolkit-0.1.1.tgz
 ```
 
 Для сборки и основных тестов используется Node.js 22+. Проверенные runtime и границы
