@@ -1,4 +1,4 @@
-import {ydb} from '@aderevyankin/ydb-toolkit';
+import {ydb} from '@andmider/ydb-toolkit';
 import {openLocal} from './connect.mjs';
 
 const db = await openLocal();

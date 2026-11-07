@@ -12,9 +12,9 @@ SDK, ORM, or cross-database abstraction. An independent project, not an official
 
 | Entry point | Features |
 | --- | --- |
-| `@aderevyankin/ydb-toolkit` | `YdbClient`, typed parameters, timeouts/cancellation, read hedging, Table API, diagnostics |
-| `@aderevyankin/ydb-toolkit/migrations` | tooling connection, DDL helpers, migration creation/application/rollback |
-| `@aderevyankin/ydb-toolkit/schema` | TypeScript types and table registry generated from the database schema |
+| `@andmider/ydb-toolkit` | `YdbClient`, typed parameters, timeouts/cancellation, read hedging, Table API, diagnostics |
+| `@andmider/ydb-toolkit/migrations` | tooling connection, DDL helpers, migration creation/application/rollback |
+| `@andmider/ydb-toolkit/schema` | TypeScript types and table registry generated from the database schema |
 | `ydb-toolkit` | CLI: `create`, `migrate`, `rollback`, `types` |
 
 Int64/Uint64 remain `bigint`; nullable fields use `T | null`. Results are not mapped
@@ -22,7 +22,11 @@ to application models. Query names never determine whether retries are safe.
 
 ## Installation
 
-**Not published to npm yet.** Build a tarball from this repository:
+```sh
+npm install @andmider/ydb-toolkit
+```
+
+To build a local tarball:
 
 ```sh
 git clone https://github.com/aderevyankin/ydb-toolkit.git
@@ -34,7 +38,7 @@ npm pack
 In your application:
 
 ```sh
-npm install /path/to/aderevyankin-ydb-toolkit-0.1.0.tgz
+npm install /path/to/andmider-ydb-toolkit-0.1.0.tgz
 ```
 
 Builds and the primary test suite use Node.js 22+. See the [compatibility matrix](docs/guide.en.md#compatibility)
@@ -43,7 +47,7 @@ for tested runtimes and the scope of those checks.
 ## First query
 
 ```ts
-import {YdbClient, ydb} from '@aderevyankin/ydb-toolkit';
+import {YdbClient, ydb} from '@andmider/ydb-toolkit';
 
 const db = await YdbClient.connect({connectionString: 'grpc://localhost:2140/local'});
 try {

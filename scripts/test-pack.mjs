@@ -12,9 +12,9 @@ assert(!packed.files.some(file => /(?:node_modules|\.env|AGENTS\.md)/.test(file.
 await writeFile(path.join(directory, 'package.json'), JSON.stringify({type: 'module', private: true}));
 run('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', path.join(directory, packed.filename)]);
 await writeFile(path.join(directory, 'smoke.mjs'), `import assert from 'node:assert/strict';
-import {YdbClient, ydb} from '@aderevyankin/ydb-toolkit';
-import {connect, runMigrations, rollbackMigration} from '@aderevyankin/ydb-toolkit/migrations';
-import {generateTypes} from '@aderevyankin/ydb-toolkit/schema';
+import {YdbClient, ydb} from '@andmider/ydb-toolkit';
+import {connect, runMigrations, rollbackMigration} from '@andmider/ydb-toolkit/migrations';
+import {generateTypes} from '@andmider/ydb-toolkit/schema';
 import {AnonymousCredentialsProvider} from '@ydbjs/auth/anonymous';
 const options = {connectionString: 'grpc://localhost:2140/local', driverOptions: {credentialsProvider: new AnonymousCredentialsProvider()}};
 const client = await YdbClient.connect(options);
@@ -30,14 +30,14 @@ try {
   await rollbackMigration(db, './migrations');
 } finally {await db.close();}
 `);
-const cli = path.join(directory, 'node_modules/@aderevyankin/ydb-toolkit/dist/cli.js');
+const cli = path.join(directory, 'node_modules/@andmider/ydb-toolkit/dist/cli.js');
 assert.match(run(process.execPath, [cli, '--help']), /migrate/);
 run(process.execPath, [cli, 'create', 'create_items', '--dir', 'migrations']);
 run(process.execPath, ['smoke.mjs']);
 assert.match(await readFile(path.join(directory, 'types.ts'), 'utf8'), /interface Items/);
-await writeFile(path.join(directory, 'consumer.ts'), `import {YdbClient, ydb} from '@aderevyankin/ydb-toolkit';
-import {generateTypes} from '@aderevyankin/ydb-toolkit/schema';
-import {connect, createTable} from '@aderevyankin/ydb-toolkit/migrations';
+await writeFile(path.join(directory, 'consumer.ts'), `import {YdbClient, ydb} from '@andmider/ydb-toolkit';
+import {generateTypes} from '@andmider/ydb-toolkit/schema';
+import {connect, createTable} from '@andmider/ydb-toolkit/migrations';
 declare const client: YdbClient;
 client.execute('SELECT $id', {$id: ydb.required.int64(9007199254740993n)}, {mode: 'read'});
 // @ts-expect-error Writes must not accept hedge options.

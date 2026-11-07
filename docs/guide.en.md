@@ -171,8 +171,8 @@ safe for concurrent writes, or automatically reversible to NOT NULL.
 ## Schema generation
 
 ```ts
-import {connect} from '@aderevyankin/ydb-toolkit/migrations';
-import {generateTypes} from '@aderevyankin/ydb-toolkit/schema';
+import {connect} from '@andmider/ydb-toolkit/migrations';
+import {generateTypes} from '@andmider/ydb-toolkit/schema';
 const db = await connect({connectionString});
 try {
   await generateTypes(db, {out: 'src/db/generated.ts', registry: 'database/tables.mjs'});

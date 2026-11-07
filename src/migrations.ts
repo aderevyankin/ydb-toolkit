@@ -194,6 +194,6 @@ export async function createMigration(directory: string, name: string): Promise<
   await mkdir(directory, {recursive: true});
   const stamp = new Date().toISOString().replace(/\D/g, "").slice(0, 17);
   const filename = path.resolve(directory, `${stamp}_${name}.mjs`);
-  await writeFile(filename, `import {createTable, dropTable} from '@aderevyankin/ydb-toolkit/migrations';\n\nexport async function up(db) {\n  await createTable(db, 'items', [{name: 'id', type: 'UTF8', comment: 'Item key'}], ['id']);\n}\n\nexport async function down(db) {\n  await dropTable(db, 'items');\n}\n`, {flag: "wx"});
+  await writeFile(filename, `import {createTable, dropTable} from '@andmider/ydb-toolkit/migrations';\n\nexport async function up(db) {\n  await createTable(db, 'items', [{name: 'id', type: 'UTF8', comment: 'Item key'}], ['id']);\n}\n\nexport async function down(db) {\n  await dropTable(db, 'items');\n}\n`, {flag: "wx"});
   return filename;
 }

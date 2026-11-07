@@ -1,4 +1,4 @@
-import {YdbClient} from '@aderevyankin/ydb-toolkit';
+import {YdbClient} from '@andmider/ydb-toolkit';
 
 export const connectionString = 'grpc://localhost:2140/local';
 

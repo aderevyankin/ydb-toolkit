@@ -151,7 +151,7 @@ test('DDL identifiers and registry checks reject untrusted identifiers', () => {
 test('createMigration writes a standalone template and validates names', async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'ydb-toolkit-unit-'));
   const file = await createMigration(dir, 'create_items');
-  assert.match(await readFile(file, 'utf8'), /@aderevyankin\/ydb-toolkit\/migrations/);
+  assert.match(await readFile(file, 'utf8'), /@andmider\/ydb-toolkit\/migrations/);
   assert.equal((await readdir(dir)).length, 1);
   await assert.rejects(createMigration(dir, '../unsafe'));
 });

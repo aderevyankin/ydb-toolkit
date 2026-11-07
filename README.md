@@ -12,9 +12,9 @@
 
 | Точка входа | Возможности |
 | --- | --- |
-| `@aderevyankin/ydb-toolkit` | `YdbClient`, типизированные параметры, отмена/таймауты, hedge чтений, Table API, диагностика |
-| `@aderevyankin/ydb-toolkit/migrations` | подключение утилит, DDL-хелперы, создание/применение/откат миграций |
-| `@aderevyankin/ydb-toolkit/schema` | генерация TypeScript-типов и реестра таблиц из схемы YDB |
+| `@andmider/ydb-toolkit` | `YdbClient`, типизированные параметры, отмена/таймауты, hedge чтений, Table API, диагностика |
+| `@andmider/ydb-toolkit/migrations` | подключение утилит, DDL-хелперы, создание/применение/откат миграций |
+| `@andmider/ydb-toolkit/schema` | генерация TypeScript-типов и реестра таблиц из схемы YDB |
 | `ydb-toolkit` | CLI `create`, `migrate`, `rollback`, `types` |
 
 Int64/Uint64 остаются `bigint`, nullable — `T | null`. Пакет не преобразует результаты в
@@ -22,7 +22,11 @@ Int64/Uint64 остаются `bigint`, nullable — `T | null`. Пакет не
 
 ## Установка
 
-Пакет пока **не опубликован в npm**. Соберите tarball из этого репозитория:
+```sh
+npm install @andmider/ydb-toolkit
+```
+
+Для локальной сборки tarball:
 
 ```sh
 git clone https://github.com/aderevyankin/ydb-toolkit.git
@@ -34,7 +38,7 @@ npm pack
 В потребляющем проекте:
 
 ```sh
-npm install /path/to/aderevyankin-ydb-toolkit-0.1.0.tgz
+npm install /path/to/andmider-ydb-toolkit-0.1.0.tgz
 ```
 
 Для сборки и основных тестов используется Node.js 22+. Проверенные runtime и границы
@@ -43,7 +47,7 @@ npm install /path/to/aderevyankin-ydb-toolkit-0.1.0.tgz
 ## Первый запрос
 
 ```ts
-import {YdbClient, ydb} from '@aderevyankin/ydb-toolkit';
+import {YdbClient, ydb} from '@andmider/ydb-toolkit';
 
 const db = await YdbClient.connect({
   connectionString: 'grpc://localhost:2140/local',

@@ -3,9 +3,9 @@ import {mkdtemp, readFile} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {AnonymousCredentialsProvider} from '@ydbjs/auth/anonymous';
-import {YdbClient, ydb} from '@aderevyankin/ydb-toolkit';
-import {connect, createTable, dropTable} from '@aderevyankin/ydb-toolkit/migrations';
-import {generateTypes} from '@aderevyankin/ydb-toolkit/schema';
+import {YdbClient, ydb} from '@andmider/ydb-toolkit';
+import {connect, createTable, dropTable} from '@andmider/ydb-toolkit/migrations';
+import {generateTypes} from '@andmider/ydb-toolkit/schema';
 
 const runtime = process.versions.bun ? 'bun' : process.versions.deno ? 'deno' : 'node';
 const table = `toolkit_runtime_${runtime}`;

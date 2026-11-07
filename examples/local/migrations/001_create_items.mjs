@@ -1,4 +1,4 @@
-import {createTable, dropTable} from '@aderevyankin/ydb-toolkit/migrations';
+import {createTable, dropTable} from '@andmider/ydb-toolkit/migrations';
 
 export async function up(db) {
   if ((await db.listTables()).includes('items')) {return;}
